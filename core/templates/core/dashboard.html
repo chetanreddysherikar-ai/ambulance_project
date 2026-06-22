@@ -1,0 +1,140 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard - AmbulanceIQ{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block content %}
+
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#1a237e20;color:#1a237e"><i class="fas fa-car-crash"></i></div>
+        <div><div class="text-muted small">Total Accidents</div><h3 class="mb-0 fw-bold">{{ total_accidents }}</h3></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#43a04720;color:#43a047"><i class="fas fa-ambulance"></i></div>
+        <div><div class="text-muted small">Ambulances</div><h3 class="mb-0 fw-bold">{{ total_ambulances }}</h3><small class="text-success">{{ available_ambulances }} available</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#e5393520;color:#e53935"><i class="fas fa-siren-on"></i></div>
+        <div><div class="text-muted small">Active Dispatches</div><h3 class="mb-0 fw-bold">{{ active_dispatches }}</h3></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#00acc120;color:#00acc1"><i class="fas fa-brain"></i></div>
+        <div><div class="text-muted small">DEC Score</div>
+        {% if latest_clustering %}<h3 class="mb-0 fw-bold">{{ latest_clustering.distance_score|floatformat:3 }}</h3><small class="text-muted">km avg</small>{% else %}<h3 class="mb-0 text-muted">–</h3>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="fas fa-chart-pie me-2 text-primary"></i>Accident Severity</span>
+      </div>
+      <div class="card-body"><canvas id="severityChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header py-3">
+        <span class="fw-semibold"><i class="fas fa-car-crash me-2 text-danger"></i>Recent Accidents</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Location</th><th>Severity</th><th>Casualties</th><th>Time</th></tr></thead>
+          <tbody>
+          {% for acc in recent_accidents %}
+          <tr>
+            <td><a href="{% url 'accident_detail' acc.pk %}" class="text-decoration-none">({{ acc.latitude|floatformat:3 }}, {{ acc.longitude|floatformat:3 }})</a></td>
+            <td><span class="badge badge-severity-{{ acc.severity }}">{{ acc.severity }}</span></td>
+            <td>{{ acc.casualties }}</td>
+            <td class="text-muted small">{{ acc.date_recorded|timesince }} ago</td>
+          </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No accidents recorded yet. <a href="{% url 'run_clustering' %}" onclick="this.href='{% url 'clustering' %}'">Run clustering</a> to generate data.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between">
+        <span class="fw-semibold"><i class="fas fa-list me-2 text-primary"></i>Recent Dispatches</span>
+        <a href="{% url 'ambulance_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>#</th><th>Ambulance</th><th>Status</th><th>Distance</th><th>ETA</th></tr></thead>
+          <tbody>
+          {% for d in recent_dispatches %}
+          <tr>
+            <td>#{{ d.id }}</td>
+            <td>{{ d.ambulance.name|default:"N/A" }}</td>
+            <td><span class="badge bg-{% if d.status == 'completed' %}success{% elif d.status == 'en_route' %}warning{% else %}primary{% endif %}">{{ d.status }}</span></td>
+            <td>{% if d.distance_km %}{{ d.distance_km|floatformat:1 }} km{% else %}–{% endif %}</td>
+            <td>{% if d.response_time_min %}{{ d.response_time_min|floatformat:0 }} min{% else %}–{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">No dispatches yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-bolt me-2 text-warning"></i>Quick Actions</span></div>
+      <div class="card-body d-flex flex-column gap-3">
+        <a href="{% url 'accident_add' %}" class="btn btn-danger"><i class="fas fa-plus me-2"></i>Report Accident</a>
+        <a href="{% url 'clustering' %}" class="btn btn-primary"><i class="fas fa-project-diagram me-2"></i>Run DEC Clustering</a>
+        <a href="{% url 'eda' %}" class="btn btn-outline-primary"><i class="fas fa-chart-bar me-2"></i>View EDA</a>
+        <a href="{% url 'upload_data' %}" class="btn btn-outline-secondary"><i class="fas fa-upload me-2"></i>Upload Dataset</a>
+        {% if latest_clustering %}
+        <div class="alert alert-success mb-0 small">
+          <strong>Active Model:</strong> {{ latest_clustering.algorithm }}<br>
+          Clusters: {{ latest_clustering.n_clusters }}<br>
+          Score: {{ latest_clustering.distance_score|floatformat:3 }} km
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const sevData = {{ severity_counts|safe }};
+new Chart(document.getElementById('severityChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(sevData),
+    datasets: [{
+      data: Object.values(sevData),
+      backgroundColor: ['#43a047','#fb8c00','#e53935','#6a1a1a'],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
+});
+</script>
+{% endblock %}

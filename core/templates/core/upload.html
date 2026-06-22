@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+{% block title %}Upload Data{% endblock %}
+{% block page_title %}Upload Accident Dataset{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-upload me-2 text-primary"></i>Upload CSV File</span></div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">{% csrf_token %}
+          <div class="mb-4 p-4 border-2 border-dashed rounded text-center" style="border:2px dashed #ccc">
+            <i class="fas fa-file-csv fs-1 text-muted mb-2 d-block"></i>
+            <p class="text-muted mb-2">Upload a CSV file with accident data</p>
+            <input type="file" name="data_file" accept=".csv" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-upload me-2"></i>Upload & Process</button>
+        </form>
+        <div class="mt-4 p-3 rounded" style="background:#f0f4f8">
+          <h6 class="fw-bold">Expected CSV Columns:</h6>
+          <code class="small d-block">latitude, longitude, severity, weather_condition, road_type, time_of_day, day_of_week, casualties, fatalities, vehicles_involved, speed_limit</code>
+          <p class="text-muted small mt-2">severity: low/medium/high/fatal | weather_condition: clear/rain/fog/storm | road_type: highway/urban/rural/intersection</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-history me-2"></i>Upload History</span></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>File</th><th>Status</th><th>Records</th><th>Time</th></tr></thead>
+          <tbody>
+          {% for u in uploads %}
+          <tr>
+            <td><small>{{ u.filename|truncatechars:25 }}</small></td>
+            <td><span class="badge bg-{% if u.status == 'completed' %}success{% elif u.status == 'failed' %}danger{% elif u.status == 'processing' %}warning{% else %}secondary{% endif %}">{{ u.status }}</span></td>
+            <td>{{ u.records_processed }}</td>
+            <td class="text-muted small">{{ u.uploaded_at|timesince }} ago</td>
+          </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No uploads yet</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

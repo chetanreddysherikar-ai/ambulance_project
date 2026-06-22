@@ -1,0 +1,89 @@
+{% extends 'core/base.html' %}
+{% block title %}Report Accident{% endblock %}
+{% block page_title %}Report New Accident{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-car-crash me-2 text-danger"></i>Accident Details</span></div>
+      <div class="card-body">
+        <form method="post">{% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Latitude *</label>
+              <input type="number" name="latitude" step="0.0001" class="form-control" placeholder="-1.2921" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Longitude *</label>
+              <input type="number" name="longitude" step="0.0001" class="form-control" placeholder="36.8219" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Severity *</label>
+              <select name="severity" class="form-select" required>
+                {% for val, label in severity_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Weather</label>
+              <select name="weather_condition" class="form-select">
+                {% for val, label in weather_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Road Type</label>
+              <select name="road_type" class="form-select">
+                {% for val, label in road_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Hour (0-23)</label>
+              <input type="number" name="time_of_day" min="0" max="23" class="form-control" value="12">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Day of Week (0-6)</label>
+              <input type="number" name="day_of_week" min="0" max="6" class="form-control" value="1">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Casualties</label>
+              <input type="number" name="casualties" min="0" class="form-control" value="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Fatalities</label>
+              <input type="number" name="fatalities" min="0" class="form-control" value="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Vehicles Involved</label>
+              <input type="number" name="vehicles_involved" min="1" class="form-control" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Speed Limit (km/h)</label>
+              <input type="number" name="speed_limit" class="form-control" value="60">
+            </div>
+            <div class="col-12 mt-2">
+              <button type="submit" class="btn btn-danger me-2"><i class="fas fa-save me-2"></i>Save Accident</button>
+              <a href="{% url 'accident_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="card mt-4">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-map-pin me-2"></i>Click Map to Set Location</span></div>
+      <div class="card-body p-2"><div id="addMap" style="height:300px;border-radius:8px"></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const map = L.map('addMap').setView([-1.2921, 36.8219], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let marker = null;
+map.on('click', e => {
+  if (marker) marker.remove();
+  marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
+  document.querySelector('[name=latitude]').value = e.latlng.lat.toFixed(4);
+  document.querySelector('[name=longitude]').value = e.latlng.lng.toFixed(4);
+});
+</script>
+{% endblock %}

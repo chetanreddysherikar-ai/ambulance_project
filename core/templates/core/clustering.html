@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+{% block title %}DEC Clustering{% endblock %}
+{% block page_title %}Deep Embedded Clustering{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card mb-4">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-sliders-h me-2 text-primary"></i>Run Clustering</span></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'run_clustering' %}">{% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Algorithm</label>
+            {% for val, label in algorithm_choices %}
+            <div class="algo-card mb-2 {% if val == 'DEC' %}best{% endif %}" onclick="selectAlgo('{{ val }}')">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="algorithm" value="{{ val }}" id="algo_{{ val }}" {% if val == 'DEC' %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="algo_{{ val }}">{{ label }}</label>
+                {% if val == 'DEC' %}<span class="badge bg-success ms-2 small">Recommended</span>{% endif %}
+              </div>
+              <small class="text-muted">
+                {% if val == 'DEC' %}Deep learning + Cat2Vec. 95% accuracy, score 7.581{% elif val == 'KMeans' %}Traditional centroid clustering{% elif val == 'GMM' %}Probabilistic soft clustering{% else %}Hierarchical clustering{% endif %}
+              </small>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Number of Clusters (Ambulance Stations)</label>
+            <input type="range" class="form-range" name="n_clusters" min="4" max="15" value="8" id="clusterRange" oninput="document.getElementById('clusterVal').textContent=this.value">
+            <div class="text-center"><span id="clusterVal" class="fw-bold text-primary fs-4">8</span> <small class="text-muted">stations</small></div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-play me-2"></i>Run Clustering
+          </button>
+          <p class="text-muted small mt-2 text-center">This will generate/use accident data and train the model.</p>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-trophy me-2 text-warning"></i>Algorithm Comparison</span></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Algorithm</th><th>Score</th><th>Acc</th></tr></thead>
+          <tbody>
+          {% for r in results|slice:":8" %}
+          <tr {% if r.is_active %}class="table-success"{% endif %}>
+            <td><span class="badge bg-{% if r.algorithm == 'DEC' %}primary{% else %}secondary{% endif %}">{{ r.algorithm }}</span></td>
+            <td>{% if r.distance_score %}{{ r.distance_score|floatformat:3 }}{% else %}–{% endif %}</td>
+            <td>{% if r.accuracy %}{{ r.accuracy|floatformat:2 }}{% else %}–{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="3" class="text-center text-muted">No results yet</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-map-marked-alt me-2 text-danger"></i>Optimal Ambulance Positions Map</span></div>
+      <div class="card-body p-2">
+        <div id="clusterMap" style="height:400px;border-radius:8px"></div>
+      </div>
+    </div>
+
+    {% if results %}
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-table me-2"></i>Clustering Results</span></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Algorithm</th><th>Clusters</th><th>Silhouette</th><th>DB Score</th><th>Distance Score</th><th>Accuracy</th><th>Time</th></tr></thead>
+          <tbody>
+          {% for r in results %}
+          <tr {% if r.is_active %}class="table-success"{% endif %}>
+            <td>
+              <span class="badge bg-{% if r.algorithm == 'DEC' %}primary{% else %}secondary{% endif %}">{{ r.algorithm }}</span>
+              {% if r.is_active %}<span class="badge bg-success ms-1">Active</span>{% endif %}
+            </td>
+            <td>{{ r.n_clusters }}</td>
+            <td>{% if r.silhouette_score %}{{ r.silhouette_score|floatformat:4 }}{% else %}–{% endif %}</td>
+            <td>{% if r.davies_bouldin_score %}{{ r.davies_bouldin_score|floatformat:4 }}{% else %}–{% endif %}</td>
+            <td>{% if r.distance_score %}<strong>{{ r.distance_score|floatformat:3 }} km</strong>{% else %}–{% endif %}</td>
+            <td>{% if r.accuracy %}<span class="text-success fw-bold">{{ r.accuracy|floatformat:2 }}</span>{% else %}–{% endif %}</td>
+            <td>{% if r.training_time_sec %}{{ r.training_time_sec|floatformat:1 }}s{% else %}–{% endif %}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ambulances = {{ ambulances_json|safe }};
+const map = L.map('clusterMap').setView([-1.2921, 36.8219], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+const colors = ['#e53935','#1a237e','#43a047','#fb8c00','#9c27b0','#00acc1','#795548','#607d8b'];
+ambulances.forEach((a, i) => {
+  const color = colors[i % colors.length];
+  L.circleMarker([a.lat, a.lon], {radius:14, fillColor:color, color:'#fff', weight:2, fillOpacity:0.9})
+    .bindPopup(`<strong>${a.name}</strong><br>Cluster: ${a.cluster}<br>Status: ${a.status}<br>Score: ${a.score ? a.score.toFixed(3) : '–'} km`)
+    .addTo(map);
+});
+
+if (ambulances.length === 0) {
+  document.getElementById('clusterMap').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><div class="text-center"><i class="fas fa-project-diagram fs-1 mb-3"></i><p>Run clustering to see optimal positions</p></div></div>';
+}
+
+function selectAlgo(val) {
+  document.getElementById('algo_' + val).checked = true;
+}
+</script>
+{% endblock %}

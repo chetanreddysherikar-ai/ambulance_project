@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+{% block title %}Accidents{% endblock %}
+{% block page_title %}Accident Records{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="fas fa-map me-2 text-primary"></i>Accident Map</span>
+        <form class="d-flex gap-2" method="get">
+          <select name="severity" class="form-select form-select-sm" style="width:auto">
+            <option value="">All Severity</option>
+            {% for val, label in severity_choices %}<option value="{{ val }}" {% if val == selected_severity %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <button class="btn btn-sm btn-primary">Filter</button>
+        </form>
+      </div>
+      <div class="card-body p-2"><div id="accidentMap" style="height:380px;border-radius:8px"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between">
+        <span class="fw-semibold"><i class="fas fa-list me-2"></i>Records</span>
+        <a href="{% url 'accident_add' %}" class="btn btn-sm btn-danger"><i class="fas fa-plus me-1"></i>Add Accident</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>#</th><th>Location</th><th>Severity</th><th>Weather</th><th>Road</th><th>Casualties</th><th>Cluster</th><th></th></tr></thead>
+          <tbody>
+          {% for acc in accidents %}
+          <tr>
+            <td>{{ acc.id }}</td>
+            <td><small>({{ acc.latitude|floatformat:3 }}, {{ acc.longitude|floatformat:3 }})</small></td>
+            <td><span class="badge badge-severity-{{ acc.severity }}">{{ acc.severity }}</span></td>
+            <td>{{ acc.weather_condition }}</td>
+            <td>{{ acc.road_type }}</td>
+            <td>{{ acc.casualties }}</td>
+            <td>{% if acc.cluster_id is not None %}#{{ acc.cluster_id }}{% else %}<span class="text-muted">–</span>{% endif %}</td>
+            <td><a href="{% url 'accident_detail' acc.pk %}" class="btn btn-sm btn-outline-primary">View</a></td>
+          </tr>
+          {% empty %}<tr><td colspan="8" class="text-center text-muted py-4">No accidents. <a href="{% url 'clustering' %}">Run clustering</a> to generate sample data.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-info-circle me-2"></i>Legend</span></div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><span class="badge badge-severity-low px-3">Low</span><small class="text-muted">Minor accidents</small></div>
+        <div class="d-flex align-items-center gap-2 mb-2"><span class="badge badge-severity-medium px-3">Medium</span><small class="text-muted">Moderate injuries</small></div>
+        <div class="d-flex align-items-center gap-2 mb-2"><span class="badge badge-severity-high px-3">High</span><small class="text-muted">Serious injuries</small></div>
+        <div class="d-flex align-items-center gap-2"><span class="badge badge-severity-fatal px-3">Fatal</span><small class="text-muted">Fatalities</small></div>
+      </div>
+    </div>
+    <div class="card mt-4">
+      <div class="card-header py-3"><span class="fw-semibold">Quick Add Accident</span></div>
+      <div class="card-body"><a href="{% url 'accident_add' %}" class="btn btn-danger w-100"><i class="fas fa-plus me-2"></i>Report New Accident</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const accData = {{ accidents_json|safe }};
+const map = L.map('accidentMap').setView([-1.2921, 36.8219], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+const sevColors = {low:'#43a047',medium:'#fb8c00',high:'#e53935',fatal:'#4a0000'};
+accData.forEach(a => {
+  L.circleMarker([a.lat, a.lon], {radius:5, fillColor:sevColors[a.severity]||'#999', color:'#fff', weight:1, fillOpacity:0.8})
+    .bindPopup(`<strong>Accident #${a.id}</strong><br>Severity: ${a.severity}`)
+    .addTo(map);
+});
+</script>
+{% endblock %}

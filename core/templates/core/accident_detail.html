@@ -1,0 +1,94 @@
+{% extends 'core/base.html' %}
+{% block title %}Accident #{{ accident.id }}{% endblock %}
+{% block page_title %}Accident Detail #{{ accident.id }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card mb-4">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-info-circle me-2 text-primary"></i>Accident Info</span></div>
+      <div class="card-body">
+        <table class="table table-borderless mb-0">
+          <tr><th>Severity</th><td><span class="badge badge-severity-{{ accident.severity }}">{{ accident.severity }}</span></td></tr>
+          <tr><th>Location</th><td>({{ accident.latitude|floatformat:4 }}, {{ accident.longitude|floatformat:4 }})</td></tr>
+          <tr><th>Weather</th><td>{{ accident.weather_condition }}</td></tr>
+          <tr><th>Road Type</th><td>{{ accident.road_type }}</td></tr>
+          <tr><th>Time</th><td>{{ accident.time_of_day }}:00 hrs, Day {{ accident.day_of_week }}</td></tr>
+          <tr><th>Casualties</th><td>{{ accident.casualties }}</td></tr>
+          <tr><th>Fatalities</th><td>{{ accident.fatalities }}</td></tr>
+          <tr><th>Vehicles</th><td>{{ accident.vehicles_involved }}</td></tr>
+          <tr><th>Speed Limit</th><td>{{ accident.speed_limit }} km/h</td></tr>
+          <tr><th>Cluster</th><td>{% if accident.cluster_id is not None %}#{{ accident.cluster_id }}{% else %}Not clustered{% endif %}</td></tr>
+          <tr><th>Recorded</th><td>{{ accident.date_recorded|date:"d M Y, H:i" }}</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-ambulance me-2 text-danger"></i>Dispatch Ambulance</span></div>
+      <div class="card-body">
+        {% if nearest_ambulance %}
+        <div class="alert alert-info">
+          <strong><i class="fas fa-map-marker-alt me-1"></i>Nearest:</strong> {{ nearest_ambulance.name }}<br>
+          <small>Distance: ~{{ nearest_distance }} km</small>
+        </div>
+        <form method="post" action="{% url 'dispatch_ambulance' nearest_ambulance.pk %}">{% csrf_token %}
+          <input type="hidden" name="accident_id" value="{{ accident.id }}">
+          <button class="btn btn-danger w-100 mb-2"><i class="fas fa-ambulance me-2"></i>Dispatch Nearest ({{ nearest_ambulance.name }})</button>
+        </form>
+        {% else %}
+        <div class="alert alert-warning">No ambulances available.</div>
+        {% endif %}
+        {% if ambulances|length > 1 %}
+        <hr><p class="fw-semibold small">Or select specific ambulance:</p>
+        <div class="list-group">
+        {% for amb in ambulances|slice:":5" %}
+          <form method="post" action="{% url 'dispatch_ambulance' amb.pk %}">{% csrf_token %}
+            <input type="hidden" name="accident_id" value="{{ accident.id }}">
+            <button type="submit" class="list-group-item list-group-item-action d-flex justify-content-between">
+              <span>{{ amb.name }}</span><span class="badge bg-success">Available</span>
+            </button>
+          </form>
+        {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-4">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-map me-2"></i>Location Map</span></div>
+      <div class="card-body p-2"><div id="detailMap" style="height:300px;border-radius:8px"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header py-3"><span class="fw-semibold"><i class="fas fa-history me-2"></i>Dispatch History</span></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Ambulance</th><th>Status</th><th>Distance</th><th>ETA</th></tr></thead>
+          <tbody>
+          {% for d in dispatches %}
+          <tr>
+            <td>{{ d.ambulance.name|default:"N/A" }}</td>
+            <td><span class="badge bg-{% if d.status == 'completed' %}success{% elif d.status == 'en_route' %}warning{% else %}primary{% endif %}">{{ d.status }}</span></td>
+            <td>{% if d.distance_km %}{{ d.distance_km|floatformat:1 }} km{% else %}–{% endif %}</td>
+            <td>{% if d.response_time_min %}{{ d.response_time_min|floatformat:0 }} min{% else %}–{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No dispatches yet</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const map = L.map('detailMap').setView([{{ accident.latitude }}, {{ accident.longitude }}], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.circleMarker([{{ accident.latitude }}, {{ accident.longitude }}], {radius:12, fillColor:'#e53935', color:'#fff', weight:2, fillOpacity:0.9})
+  .bindPopup('<strong>Accident Site</strong><br>Severity: {{ accident.severity }}').addTo(map).openPopup();
+{% if nearest_ambulance %}
+L.circleMarker([{{ nearest_ambulance.latitude }}, {{ nearest_ambulance.longitude }}], {radius:10, fillColor:'#1a237e', color:'#fff', weight:2, fillOpacity:0.9})
+  .bindPopup('<strong>{{ nearest_ambulance.name }}</strong><br>Nearest ambulance').addTo(map);
+{% endif %}
+</script>
+{% endblock %}

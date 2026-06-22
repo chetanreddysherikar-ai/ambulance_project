@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AmbulanceIQ - Optimal Ambulance Positioning</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body{font-family:'Segoe UI',sans-serif}
+.hero{background:linear-gradient(135deg,#1a237e,#283593,#1565c0);min-height:100vh;display:flex;align-items:center;color:#fff}
+.hero h1{font-size:3rem;font-weight:800}
+.badge-tech{background:rgba(255,255,255,.2);border-radius:20px;padding:6px 16px;font-size:.85rem;display:inline-block;margin:4px}
+.feature-card{border:none;border-radius:16px;padding:28px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08);height:100%}
+.feature-icon{width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 16px}
+.stat-hero{background:rgba(255,255,255,.1);border-radius:12px;padding:20px;text-align:center}
+.stat-hero h2{font-size:2.5rem;font-weight:800;color:#e53935}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark fixed-top" style="background:rgba(26,35,126,.97)">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#"><i class="fas fa-ambulance me-2" style="color:#e53935"></i>AmbulanceIQ</a>
+    <div>
+      <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-2">Login</a>
+      <a href="{% url 'register' %}" class="btn btn-danger btn-sm">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container py-5 mt-5">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="mb-3">
+          <span class="badge-tech"><i class="fas fa-brain me-1"></i>Deep Embedded Clustering</span>
+          <span class="badge-tech"><i class="fas fa-network-wired me-1"></i>Cat2Vec Embeddings</span>
+          <span class="badge-tech"><i class="fas fa-map-marked-alt me-1"></i>Nairobi Dataset</span>
+        </div>
+        <h1>Optimal Ambulance<br><span style="color:#ef5350">Positioning System</span></h1>
+        <p class="lead mt-3 mb-4" style="color:rgba(255,255,255,.85)">
+          AI-powered emergency response optimization using Deep Embedded Clustering (DEC) to pre-position ambulances at accident-prone locations — reducing response time and saving lives.
+        </p>
+        <a href="{% url 'register' %}" class="btn btn-danger btn-lg me-3"><i class="fas fa-rocket me-2"></i>Launch System</a>
+        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Login</a>
+      </div>
+      <div class="col-lg-5 mt-5 mt-lg-0">
+        <div class="row g-3">
+          <div class="col-6"><div class="stat-hero"><h2>95%</h2><small>K-Fold Accuracy</small></div></div>
+          <div class="col-6"><div class="stat-hero"><h2>7.58</h2><small>Distance Score (km)</small></div></div>
+          <div class="col-6"><div class="stat-hero"><h2>DEC</h2><small>Deep Clustering</small></div></div>
+          <div class="col-6"><div class="stat-hero"><h2>8</h2><small>Optimal Clusters</small></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5 bg-white">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-5">System Modules</h2>
+    <div class="row g-4">
+      <div class="col-md-3"><div class="feature-card"><div class="feature-icon" style="background:#1a237e20;color:#1a237e"><i class="fas fa-database"></i></div><h6 class="fw-bold">Data Collection & EDA</h6><p class="text-muted small mb-0">Collects and analyzes accident, traffic, and weather data from Nairobi.</p></div></div>
+      <div class="col-md-3"><div class="feature-card"><div class="feature-icon" style="background:#e5393520;color:#e53935"><i class="fas fa-project-diagram"></i></div><h6 class="fw-bold">Deep Embedded Clustering</h6><p class="text-muted small mb-0">DEC with Cat2Vec identifies optimal ambulance locations preserving patterns.</p></div></div>
+      <div class="col-md-3"><div class="feature-card"><div class="feature-icon" style="background:#00acc120;color:#00acc1"><i class="fas fa-ruler-combined"></i></div><h6 class="fw-bold">Distance Scoring</h6><p class="text-muted small mb-0">Novel distance scoring validates ambulance placement effectiveness.</p></div></div>
+      <div class="col-md-3"><div class="feature-card"><div class="feature-icon" style="background:#43a04720;color:#43a047"><i class="fas fa-bell"></i></div><h6 class="fw-bold">Real-Time Dispatch</h6><p class="text-muted small mb-0">Allocates nearest ambulance and sends instant notifications.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5" style="background:#f0f4f8">
+  <div class="container text-center">
+    <h2 class="fw-bold mb-3">Ready to Optimize Emergency Response?</h2>
+    <p class="text-muted mb-4">Start using AI-powered ambulance positioning to reduce response times and save lives.</p>
+    <a href="{% url 'register' %}" class="btn btn-primary btn-lg px-5"><i class="fas fa-play me-2"></i>Get Started</a>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

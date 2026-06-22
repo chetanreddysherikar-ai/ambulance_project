@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}AmbulanceIQ - Optimal Positioning System{% endblock %}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --primary: #1a237e; --secondary: #e53935; --accent: #00acc1;
+    --sidebar-width: 260px; --bg: #f0f4f8;
+  }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); }
+  .sidebar {
+    width: var(--sidebar-width); min-height: 100vh; background: var(--primary);
+    position: fixed; top: 0; left: 0; z-index: 1000; transition: 0.3s;
+  }
+  .sidebar-brand {
+    padding: 20px; background: rgba(0,0,0,0.2); color: #fff;
+    font-size: 1.1rem; font-weight: 700; letter-spacing: 1px;
+  }
+  .sidebar-brand span { color: #e53935; }
+  .sidebar .nav-link {
+    color: rgba(255,255,255,0.8); padding: 12px 20px; border-radius: 0;
+    transition: 0.2s; display: flex; align-items: center; gap: 12px;
+  }
+  .sidebar .nav-link:hover, .sidebar .nav-link.active {
+    background: rgba(255,255,255,0.15); color: #fff; border-left: 3px solid var(--secondary);
+  }
+  .sidebar .nav-link i { width: 20px; text-align: center; }
+  .main-content { margin-left: var(--sidebar-width); padding: 0; }
+  .topbar {
+    background: #fff; padding: 15px 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;
+  }
+  .page-content { padding: 25px; }
+  .stat-card {
+    background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  .stat-icon {
+    width: 55px; height: 55px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+  }
+  .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .card-header { border-bottom: 1px solid #e8eaf0; background: #fff; border-radius: 12px 12px 0 0 !important; }
+  .badge-severity-low { background: #43a047; }
+  .badge-severity-medium { background: #fb8c00; }
+  .badge-severity-high { background: #e53935; }
+  .badge-severity-fatal { background: #6a1a1a; }
+  .map-container { height: 400px; border-radius: 8px; overflow: hidden; }
+  .table th { font-size: 0.8rem; text-transform: uppercase; color: #666; font-weight: 600; }
+  .btn-primary { background: var(--primary); border-color: var(--primary); }
+  .btn-primary:hover { background: #283593; border-color: #283593; }
+  .btn-danger { background: var(--secondary); border-color: var(--secondary); }
+  .sidebar-divider { border-color: rgba(255,255,255,0.1); margin: 8px 20px; }
+  .sidebar-heading { color: rgba(255,255,255,0.4); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; padding: 10px 20px 4px; }
+  .notification-badge { background: var(--secondary); border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; color: #fff; }
+  .algo-card { border: 2px solid #e8eaf0; border-radius: 10px; padding: 15px; cursor: pointer; transition: 0.2s; }
+  .algo-card.selected, .algo-card:hover { border-color: var(--primary); background: #f0f4f8; }
+  .algo-card.best { border-color: #43a047; }
+</style>
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><i class="fas fa-ambulance me-2"></i>Ambulance<span>IQ</span></div>
+  <ul class="nav flex-column mt-2">
+    <li><a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+    <div class="sidebar-heading">Data</div>
+    <li><a href="{% url 'accident_list' %}" class="nav-link {% if 'accident' in request.resolver_match.url_name %}active{% endif %}"><i class="fas fa-car-crash"></i> Accidents</a></li>
+    <li><a href="{% url 'upload_data' %}" class="nav-link {% if request.resolver_match.url_name == 'upload_data' %}active{% endif %}"><i class="fas fa-upload"></i> Upload Data</a></li>
+    <li><a href="{% url 'eda' %}" class="nav-link {% if request.resolver_match.url_name == 'eda' %}active{% endif %}"><i class="fas fa-chart-bar"></i> EDA & Analysis</a></li>
+    <div class="sidebar-heading">ML Models</div>
+    <li><a href="{% url 'clustering' %}" class="nav-link {% if request.resolver_match.url_name == 'clustering' %}active{% endif %}"><i class="fas fa-project-diagram"></i> DEC Clustering</a></li>
+    <div class="sidebar-heading">Operations</div>
+    <li><a href="{% url 'ambulance_list' %}" class="nav-link {% if request.resolver_match.url_name == 'ambulance_list' %}active{% endif %}"><i class="fas fa-hospital"></i> Ambulances</a></li>
+    <li><a href="{% url 'notifications' %}" class="nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}"><i class="fas fa-bell"></i> Notifications</a></li>
+    <hr class="sidebar-divider">
+    <li><a href="/admin/" class="nav-link"><i class="fas fa-cog"></i> Admin Panel</a></li>
+    <li><a href="{% url 'logout' %}" class="nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+  </ul>
+</div>
+<div class="main-content">
+  <div class="topbar">
+    <div><strong class="text-primary">{% block page_title %}Dashboard{% endblock %}</strong></div>
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'notifications' %}" class="text-decoration-none text-dark">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" id="notif-count">...</span>
+      </a>
+      <span class="text-muted small"><i class="fas fa-user me-1"></i>{{ user.username }}</span>
+    </div>
+  </div>
+  <div class="page-content">
+    {% for msg in messages %}
+    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Live notification badge
+function updateStats() {
+  fetch('/api/stats/').then(r=>r.json()).then(d=>{
+    document.getElementById('notif-count') && (document.getElementById('notif-count').textContent = d.unread_notifications);
+  }).catch(()=>{});
+}
+updateStats();
+setInterval(updateStats, 30000);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

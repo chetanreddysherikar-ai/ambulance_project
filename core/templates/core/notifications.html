@@ -1,0 +1,38 @@
+{% extends 'core/base.html' %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-9">
+    <div class="card">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="fas fa-bell me-2 text-primary"></i>All Notifications</span>
+        <span class="badge bg-danger">{{ notifications|length }}</span>
+      </div>
+      <div class="list-group list-group-flush">
+      {% for notif in notifications %}
+        <div class="list-group-item {% if not notif.is_read %}bg-light{% endif %} d-flex justify-content-between align-items-start p-3">
+          <div class="d-flex gap-3">
+            <div style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:{% if notif.notification_type == 'alert' %}#e5393520{% elif notif.notification_type == 'success' %}#43a04720{% elif notif.notification_type == 'warning' %}#fb8c0020{% else %}#1a237e20{% endif %}">
+              <i class="fas {% if notif.notification_type == 'alert' %}fa-exclamation-triangle text-danger{% elif notif.notification_type == 'success' %}fa-check-circle text-success{% elif notif.notification_type == 'warning' %}fa-bell text-warning{% else %}fa-info-circle text-primary{% endif %}"></i>
+            </div>
+            <div>
+              <div class="fw-semibold">{{ notif.title }}</div>
+              <div class="text-muted small">{{ notif.message }}</div>
+              <div class="text-muted" style="font-size:0.75rem">{{ notif.created_at|timesince }} ago</div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            {% if not notif.is_read %}<span class="badge bg-primary">New</span>{% endif %}
+            {% if notif.related_accident %}<a href="{% url 'accident_detail' notif.related_accident.pk %}" class="btn btn-sm btn-outline-primary">View</a>{% endif %}
+            {% if not notif.is_read %}<a href="{% url 'mark_notification_read' notif.pk %}" class="btn btn-sm btn-outline-secondary">Mark Read</a>{% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-muted py-5"><i class="fas fa-bell-slash fs-1 mb-3 d-block"></i>No notifications yet.</div>
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
